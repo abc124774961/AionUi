@@ -33,6 +33,8 @@ function MockSelectOption({ children, value }: { children?: React.ReactNode; val
   return <option value={value}>{typeof children === 'string' ? children : value}</option>;
 }
 
+vi.mock('@/renderer/components/settings/SettingsModal/TokenBitsConnection', () => ({ default: () => null }));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
@@ -599,6 +601,18 @@ describe('configured model list', () => {
   beforeEach(() => {
     mocks.providers.splice(0, mocks.providers.length, configuredProvider);
     mocks.updateProvider.mockResolvedValue(configuredProvider);
+  });
+
+  it('keeps managed model credentials and configuration out of the manual editor', () => {
+    mocks.providers.splice(0, mocks.providers.length, {
+      ...configuredProvider,
+      credential_source: 'tokenbits',
+      enabled: false,
+    });
+    render(<ModelModalContent />);
+    expect(screen.getByText('settings.assistantFilter.disabled')).toBeInTheDocument();
+    expect(screen.queryByText('edit-provider')).not.toBeInTheDocument();
+    expect(screen.queryByText('configure')).not.toBeInTheDocument();
   });
 
   it('shows explicit and automatic Vision and API mode states', () => {

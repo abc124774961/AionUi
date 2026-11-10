@@ -115,6 +115,24 @@ afterEach(() => {
 });
 
 describe('buildSpawnArgs', () => {
+  it('requires WebUI identity when the host is not desktop Local mode', () => {
+    const args = buildSpawnArgs({ port: 1234, dbPath: '/d', local: false, appVersion: '1', isPackaged: false });
+    expect(args.slice(args.indexOf('--identity-mode'), args.indexOf('--identity-mode') + 2)).toEqual([
+      '--identity-mode',
+      'webui',
+    ]);
+    expect(args).not.toContain('--local');
+  });
+
+  it('keeps each desktop launch secret independent and gives WebUI no local secret', () => {
+    const first = new BackendLifecycleManager(APP_META, () => '/binary');
+    const second = new BackendLifecycleManager(APP_META, () => '/binary');
+    const web = new BackendLifecycleManager(APP_META, () => '/binary', 'webui');
+    expect(first.localIntegrationSecret).toHaveLength(64);
+    expect(first.localIntegrationSecret).not.toBe(second.localIntegrationSecret);
+    expect(web.localIntegrationSecret).toBe('');
+  });
+
   it('produces all required flags with logDir and local=true', () => {
     const args = buildSpawnArgs({
       port: 12345,

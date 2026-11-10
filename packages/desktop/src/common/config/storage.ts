@@ -519,6 +519,8 @@ export type ModelSettings = {
 };
 
 export interface IProvider {
+  /** TokenBits-managed credentials stay in Core and are never editable in the renderer. */
+  credential_source?: 'manual' | 'tokenbits';
   id: string;
   platform: string;
   name: string;

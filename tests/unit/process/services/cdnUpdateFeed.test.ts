@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { UpdateInfo } from 'electron-updater';
 import type { AppUpdater } from 'electron-updater/out/AppUpdater';
 import type { ProviderRuntimeOptions } from 'electron-updater/out/providers/Provider';
 import { CdnGenericProvider } from '@/process/services/cdnGenericProvider';
-import { buildCdnFeedOptions, CDN_UPDATE_BASE_URL } from '@/process/services/updateFeed';
+import { buildCdnFeedOptions, buildDistributionFeedOptions, CDN_UPDATE_BASE_URL } from '@/process/services/updateFeed';
 
 const makeRuntimeOptions = (): ProviderRuntimeOptions => ({
   isUseMultipleRangeRequest: true,
@@ -54,5 +54,17 @@ describe('CdnGenericProvider', () => {
     } satisfies UpdateInfo);
 
     expect(files[0]?.url.href).toBe('https://static.aionui.com/releases/2.1.14/AionUi-2.1.14-mac-arm64.dmg');
+  });
+});
+
+describe('distribution update feed', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it('keeps enhanced builds on the fork release feed', () => {
+    vi.stubEnv('AIONUI_DISTRIBUTION', 'tokenbits');
+    expect(buildDistributionFeedOptions()).toEqual({ provider: 'github', owner: 'abc124774961', repo: 'AionUi' });
+  });
+  it('preserves the upstream release feed without an enhanced build flag', () => {
+    vi.stubEnv('AIONUI_DISTRIBUTION', '');
+    expect(buildDistributionFeedOptions()).toEqual(buildCdnFeedOptions());
   });
 });

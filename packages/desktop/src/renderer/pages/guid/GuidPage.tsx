@@ -1,3 +1,4 @@
+import TokenBitsConnection from '@/renderer/components/settings/SettingsModal/TokenBitsConnection';
 /**
  * @license
  * Copyright 2025 AionUi (aionui.com)
@@ -702,6 +703,8 @@ const GuidPage: React.FC = () => {
             onSelectWorkspace={(dir) => guidInput.setDir(dir)}
             onClearWorkspace={() => guidInput.setDir('')}
           />
+
+          <TokenBitsConnection placement='welcome' />
 
           {selectedAssistantPrompts.length > 0 ? (
             <div className='mt-18px w-full animate-fade-in ps-20px'>

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { GithubOptions } from 'builder-util-runtime';
 import { CdnGenericProvider } from './cdnGenericProvider';
 import type { CdnGenericProviderConfiguration } from './cdnGenericProvider';
 
@@ -19,4 +20,16 @@ export function buildCdnFeedOptions(): CdnFeedOptions {
     url: CDN_UPDATE_BASE_URL,
     updateProvider: CdnGenericProvider,
   };
+}
+
+/** Only explicitly built enhanced distributions use the fork's release channel. */
+export function isTokenBitsDistribution(): boolean {
+  return process.env.AIONUI_DISTRIBUTION === 'tokenbits';
+}
+
+export const TOKENBITS_RELEASE_REPO = 'abc124774961/AionUi';
+
+export function buildDistributionFeedOptions(): CdnFeedOptions | GithubOptions {
+  if (!isTokenBitsDistribution()) return buildCdnFeedOptions();
+  return { provider: 'github', owner: 'abc124774961', repo: 'AionUi' };
 }

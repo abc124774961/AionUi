@@ -6,8 +6,8 @@
  * On first tarball launch, the aioncore's SQLite `users` table holds the
  * seeded `system_default_user` row with an empty password_hash. We probe
  * /api/auth/status; if `needs_setup === true`, ask the backend to generate and
- * persist a random password via POST /api/webui/reset-password and print it to
- * stdout so the user can log in.
+ * persist a random password via the supplied local CLI callback and print it
+ * to stdout. Local-mode callers may retain the HTTP reset fallback.
  *
  * Mirrors Electron's maybeSeedInitialPassword in
  * packages/desktop/src/process/bridge/webuiBridge.ts:52-77 and the Bun dev
@@ -18,13 +18,39 @@
  * that script.
  */
 
+import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+
 export type EnsureAdminPasswordDeps = {
   fetch: typeof fetch;
   log: (msg: string) => void;
   warn: (msg: string) => void;
   sleep: (ms: number) => Promise<void>;
   now: () => number;
+  /** Standalone WebUI uses the local Core CLI; HTTP reset is local-mode only. */
+  initializePassword?: () => Promise<string>;
 };
+
+/** Set a generated password through Core's local CLI, keeping it out of argv. */
+export async function setAdminPasswordWithCli(backendBinary: string, dataDir: string): Promise<string> {
+  const password = randomBytes(24).toString('base64url');
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(backendBinary, ['--data-dir', dataDir, 'user', 'set-password', '--password-stdin'], {
+      stdio: ['pipe', 'ignore', 'pipe'],
+      timeout: 30_000,
+    });
+    // Core errors contain no password; keep only the exit status in UI diagnostics.
+    child.stderr.resume();
+    child.once('error', () => reject(new Error('Core password initialization could not start')));
+    child.stdin.on('error', () => reject(new Error('Core password initialization input failed')));
+    child.once('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Core password initialization exited with status ${code ?? 'unknown'}`));
+    });
+    child.stdin.end(`${password}\n`);
+  });
+  return password;
+}
 
 export type EnsureAdminPasswordOptions = {
   /** 127.0.0.1 port where aioncore listens (from WebHostHandle.backendPort). */
@@ -121,6 +147,13 @@ export async function ensureAdminPassword(
   }
 
   try {
+    if (deps.initializePassword) {
+      const newPassword = await deps.initializePassword();
+      const username = await fetchAdminUsername(deps, opts.backendPort);
+      deps.log(`[aionui-web] Generated initial admin password: ${newPassword}`);
+      deps.log(`[aionui-web] Log in with username "${username}" and change it from the UI.`);
+      return;
+    }
     const resetRes = await deps.fetch(`${base}/api/webui/reset-password`, { method: 'POST' });
     if (!resetRes.ok) {
       deps.warn(`[aionui-web] /api/webui/reset-password returned ${resetRes.status} — run \`${resetCmd}\``);

@@ -10,6 +10,7 @@
 
 import { type ChildProcess, spawn } from 'node:child_process';
 import { mkdirSync, statSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { connect, createServer, type Socket } from 'node:net';
 import { cleanupRegisteredAgentProcesses } from './agent-process-registry.js';
 import type { AppMetadata, BackendBinaryResolver } from './types.js';
@@ -84,6 +85,8 @@ export type BackendDirConfig = {
 };
 
 export type BackendLaunchOptions = {
+  /** Desktop remains local; standalone WebUI requires its own signed-in user. */
+  identityMode?: 'local' | 'webui';
   app: AppMetadata;
   resolveBackend: BackendBinaryResolver;
   port?: number;
@@ -211,6 +214,7 @@ export function buildSpawnArgs(config: SpawnConfig): string[] {
   if (config.logDir) args.push('--log-dir', config.logDir);
   if (config.workDir) args.push('--work-dir', config.workDir);
   if (config.local) args.push('--local');
+  else args.push('--identity-mode', 'webui');
   if (config.recoverCorruptedDatabase) args.push('--recover-corrupted-database');
   return args;
 }
@@ -520,6 +524,7 @@ export class BackendLifecycleManager {
   private _lastLogDir?: string;
   private _lastDirs?: BackendDirConfig;
   private _lastOptions?: BackendStartOptions;
+  private readonly integrationSecret = randomBytes(32).toString('hex');
   private restartCount = 0;
   private restartWindowStart = 0;
   private readonly maxRestarts = 3;
@@ -527,8 +532,13 @@ export class BackendLifecycleManager {
 
   constructor(
     private readonly appMeta: AppMetadata,
-    private readonly resolveBackend: BackendBinaryResolver
+    private readonly resolveBackend: BackendBinaryResolver,
+    private readonly identityMode: 'local' | 'webui' = 'local'
   ) {}
+
+  get localIntegrationSecret(): string {
+    return this.identityMode === 'local' ? this.integrationSecret : '';
+  }
 
   get port(): number {
     return this._port;
@@ -665,7 +675,7 @@ export class BackendLifecycleManager {
     const args = buildSpawnArgs({
       port: this._port,
       dbPath,
-      local: true,
+      local: this.identityMode === 'local',
       parentPid: process.pid,
       logDir,
       workDir: dirs?.workDir,
@@ -689,7 +699,7 @@ export class BackendLifecycleManager {
     try {
       this.childProcess = spawn(binaryPath, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: buildSpawnEnv(dirs),
+        env: { ...buildSpawnEnv(dirs), AIONUI_TOKENBITS_LOCAL_SECRET: this.localIntegrationSecret },
         cwd: dirs?.workDir ?? dbPath,
         detached: process.platform !== 'win32',
       });
@@ -1076,7 +1086,7 @@ export class BackendLifecycleManager {
  * directly to preserve current stop/port getter semantics).
  */
 export async function startBackend(opts: BackendLaunchOptions): Promise<BackendHandle> {
-  const manager = new BackendLifecycleManager(opts.app, opts.resolveBackend);
+  const manager = new BackendLifecycleManager(opts.app, opts.resolveBackend, opts.identityMode);
   const dataDir = opts.dataDir ?? '';
   if (!dataDir) {
     throw new Error('startBackend: dataDir is required');

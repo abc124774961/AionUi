@@ -215,3 +215,43 @@ describe('update.check CDN-first', () => {
     expect(res.success).toBe(false);
   });
 });
+
+describe('TokenBits distribution update isolation', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+  it('uses only fork releases and keeps direct fork asset URLs', async () => {
+    vi.stubEnv('AIONUI_DISTRIBUTION', 'tokenbits');
+    const url =
+      'https://github.com/abc124774961/AionUi/releases/download/v2.2.3-tokenbits.1/AionUi-2.2.3-tokenbits.1-mac-arm64.dmg';
+    const fetchMock = stubFetch({
+      github: () =>
+        jsonResponse([
+          {
+            ...GITHUB_RELEASES[0],
+            tag_name: 'v2.2.3-tokenbits.1',
+            prerelease: true,
+            assets: [{ name: 'AionUi-2.2.3-tokenbits.1-mac-arm64.dmg', browser_download_url: url, size: 200 }],
+          },
+        ]),
+    });
+    const handler = await getCheckHandler();
+    const result = await handler({ includePrerelease: true, repo: 'iOfficeAI/AionUi' });
+    expect(result.data?.latest?.recommendedAsset?.url).toBe(url);
+    expect(result.data?.updateAvailable).toBe(true);
+    expect(
+      fetchMock.mock.calls.every(([input]) =>
+        String(input).startsWith('https://api.github.com/repos/abc124774961/AionUi/releases')
+      )
+    ).toBe(true);
+  });
+  it('does not fall back to the official CDN when the fork is unavailable', async () => {
+    vi.stubEnv('AIONUI_DISTRIBUTION', 'tokenbits');
+    const fetchMock = stubFetch({ github: () => new Response('unavailable', { status: 503 }) });
+    const handler = await getCheckHandler();
+    const result = await handler({});
+    expect(result.success).toBe(false);
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('static.aionui.com'))).toBe(false);
+  });
+});
