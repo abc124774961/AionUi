@@ -8,6 +8,7 @@ import {
 } from '@/renderer/utils/ui/hostedWorkspace';
 import { buildFileStreamUrl } from '@/renderer/utils/file/fileUrls';
 import { resolveBackendAssetUrl } from '@/renderer/utils/platform';
+import { registerPwa } from '@/renderer/services/registerPwa';
 
 vi.mock('@/common/adapter/httpBridge', () => ({ getBaseUrl: () => '' }));
 const guard = 'g'.repeat(43);
@@ -62,6 +63,13 @@ const install = (): void => {
 };
 
 describe('hosted document request boundary', () => {
+  it('does not install an offline worker that could cache hosted session HTML', async () => {
+    const register = vi.fn();
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { register } });
+    install();
+    await registerPwa();
+    expect(register).not.toHaveBeenCalled();
+  });
   it.each([
     undefined,
     { ...configuration, guard: 'short' },

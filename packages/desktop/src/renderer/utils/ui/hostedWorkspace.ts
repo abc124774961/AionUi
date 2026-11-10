@@ -14,6 +14,7 @@ declare global {
 
 export const HOSTED_SUBJECT_KEY = 'aionui.tokenbits.hosted-subject';
 export const HOSTED_GUARD_KEY = 'aionui.tokenbits.hosted-guard';
+export const HOSTED_PREVIEW_SANDBOX = 'allow-scripts allow-forms allow-downloads';
 const WORKSPACE_HEADER = 'X-TokenBits-Workspace';
 const GUARD_QUERY = '__tb_guard';
 type BrowserWindow = Window & typeof globalThis;

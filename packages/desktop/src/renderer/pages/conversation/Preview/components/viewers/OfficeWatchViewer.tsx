@@ -7,7 +7,11 @@
 import { ipcBridge } from '@/common';
 import type { ChatFileRef } from '@/common/types/chatFile';
 import { getBaseUrl, isBackendHttpError } from '@/common/adapter/httpBridge';
-import { withHostedWorkspaceUrl } from '@/renderer/utils/ui/hostedWorkspace';
+import {
+  getHostedWorkspace,
+  HOSTED_PREVIEW_SANDBOX,
+  withHostedWorkspaceUrl,
+} from '@/renderer/utils/ui/hostedWorkspace';
 import WebviewHost from '@/renderer/components/media/WebviewHost';
 import { openExternalUrl } from '@/renderer/utils/platform';
 import { isElectronDesktop } from '@/renderer/utils/platform';
@@ -309,7 +313,14 @@ const OfficeWatchViewer: React.FC<OfficeWatchViewerProps> = ({ docType, fileRef,
   if (isElectronDesktop()) {
     return <WebviewHost url={watchUrl} className='bg-bg-1' />;
   }
-  return <iframe src={watchUrl} className='w-full h-full border-0 bg-bg-1' title={IFRAME_TITLE[docType]} />;
+  return (
+    <iframe
+      src={watchUrl}
+      sandbox={getHostedWorkspace() ? HOSTED_PREVIEW_SANDBOX : undefined}
+      className='w-full h-full border-0 bg-bg-1'
+      title={IFRAME_TITLE[docType]}
+    />
+  );
 };
 
 export default OfficeWatchViewer;
