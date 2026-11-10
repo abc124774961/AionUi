@@ -1425,7 +1425,7 @@
     "connected": "TokenBits 연결됨",
     "managed": "TokenBits에서 관리",
     "later": "나중에",
-    "waiting": "브라우저에서 계정, 기기, 확인 코드를 확인하고 승인을 완료한 다음 이 화면으로 돌아오세요. 승인 상태는 자동으로 확인됩니다.",
+    "waiting": "브라우저를 통해 연결 중입니다. TokenBits에 로그인되어 있으면 연결이 자동으로 완료됩니다.",
     "authorize": "브라우저에서 승인",
     "reconnect": "TokenBits 승인이 만료되었거나 취소되었습니다. 이 공급자를 계속 사용하려면 다시 연결하세요.",
     "balance": "잔액",

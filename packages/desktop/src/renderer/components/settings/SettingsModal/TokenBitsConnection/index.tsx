@@ -1,10 +1,12 @@
 /** Optional TokenBits entry points; preserves AionUi's providers and navigation. */
-import React, { useState } from 'react';
+import React, { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { Button, Modal, Tag, Tooltip } from '@arco-design/web-react';
 import { LinkOne } from '@icon-park/react';
 import { useTranslation } from 'react-i18next';
 import Panel from './Panel';
 import { useConnection } from './useConnection';
+import { getConnectionPanel, showConnectionPanel, subscribeConnectionPanel } from './browserFlow';
+export { default as TokenBitsCallback } from './Callback';
 
 const DISMISS_KEY = 'aionui.tokenbits.welcome.dismissed';
 const TokenBitsConnection: React.FC<{ placement?: 'welcome' | 'settings' | 'sidebar'; collapsed?: boolean }> = ({
@@ -13,7 +15,19 @@ const TokenBitsConnection: React.FC<{ placement?: 'welcome' | 'settings' | 'side
 }) => {
   const { t } = useTranslation();
   const { data: status } = useConnection();
-  const [visible, setVisible] = useState(false);
+  const panelId = useId();
+  const activePanel = useSyncExternalStore(subscribeConnectionPanel, getConnectionPanel, (): string | null => null);
+  const visible = activePanel === panelId || activePanel === placement;
+  const setVisible = (open: boolean) => {
+    if (!open) showConnectionPanel(null);
+    else if (getConnectionPanel() === null) showConnectionPanel(panelId);
+  };
+  useEffect(
+    () => () => {
+      if (getConnectionPanel() === panelId || getConnectionPanel() === placement) showConnectionPanel(null);
+    },
+    [panelId, placement]
+  );
   const [dismissed, setDismissed] = useState(() => {
     try {
       return localStorage.getItem(DISMISS_KEY) === '1';

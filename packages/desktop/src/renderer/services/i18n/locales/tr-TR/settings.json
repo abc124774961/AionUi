@@ -1423,7 +1423,7 @@
     "connected": "TokenBits bağlı",
     "managed": "TokenBits tarafından yönetiliyor",
     "later": "Daha sonra",
-    "waiting": "Tarayıcınızda hesabı, cihazı ve kodu kontrol edip yetkilendirmeyi onaylayın, ardından buraya dönün. Yetkilendirme durumu otomatik kontrol edilir.",
+    "waiting": "Tarayıcınız üzerinden bağlanılıyor. TokenBits oturumunuz açıksa bağlantı otomatik tamamlanır.",
     "authorize": "Tarayıcıda yetkilendir",
     "reconnect": "TokenBits yetkinizin süresi doldu veya yetkiniz iptal edildi. Bu sağlayıcıyı kullanmaya devam etmek için yeniden bağlanın.",
     "balance": "Bakiye",

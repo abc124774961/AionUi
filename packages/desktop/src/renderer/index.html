@@ -2,6 +2,21 @@
 <html data-theme="light" data-color-scheme="default">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Capture short-lived callback values before imports, telemetry or routing.
+      // Normalize the path before Vite's relative assets are resolved.
+      if (location.pathname === '/tokenbits/callback') {
+        try {
+          var callback = new URLSearchParams(location.hash.slice(1));
+          window.__tokenBitsCallback = {
+            code: callback.getAll('code').length === 1 ? callback.get('code') : '',
+            state: callback.getAll('state').length === 1 ? callback.get('state') : '',
+          };
+        } finally {
+          history.replaceState(null, '', '/#/tokenbits/callback');
+        }
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="application-name" content="AionUi" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -1425,7 +1425,7 @@
     "connected": "TokenBits 已連線",
     "managed": "由 TokenBits 管理",
     "later": "稍後再說",
-    "waiting": "請在瀏覽器中核對帳戶、裝置和驗證碼並確認授權，然後返回此處。系統會自動檢查授權狀態。",
+    "waiting": "正在透過瀏覽器連線。已登入 TokenBits 時將自動完成連線，無需再次確認。",
     "authorize": "前往瀏覽器授權",
     "reconnect": "TokenBits 授權已過期或被撤銷，請重新連線後繼續使用此供應商。",
     "balance": "餘額",

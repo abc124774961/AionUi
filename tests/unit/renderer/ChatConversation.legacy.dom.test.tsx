@@ -9,6 +9,17 @@ const usePresetAssistantInfoMock = vi.fn();
 const acpChatMock = vi.fn(() => <div data-testid='mock-acp-chat'>acp chat</div>);
 const acpModelSelectorMock = vi.fn(() => <div data-testid='mock-acp-model-selector'>model selector</div>);
 
+// Rendering tests do not exercise realtime transport. Keep the HTTP bridge
+// behavior intact while preventing imported stores from opening a real socket.
+vi.mock('@/common/adapter/httpBridge', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/common/adapter/httpBridge')>();
+  return {
+    ...actual,
+    wsEmitter: () => ({ on: () => () => {}, emit: () => {} }),
+    wsMappedEmitter: () => ({ on: () => () => {}, emit: () => {} }),
+  };
+});
+
 vi.mock('@/renderer/pages/conversation/Messages/MessageList', () => ({
   default: ({ className }: { className?: string }) => <div className={className}>message history</div>,
 }));

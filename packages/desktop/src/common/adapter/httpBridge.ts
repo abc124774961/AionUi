@@ -155,6 +155,8 @@ export type HttpRequestOptions = {
   silentStatuses?: number[];
   /** Extra request headers merged on top of the default `Content-Type`. */
   headers?: Record<string, string>;
+  /** Do not log request or error bodies containing one-time authorization material. */
+  redactBody?: boolean;
 };
 
 const SENSITIVE_LOG_KEY_PATTERN = /api[_-]?key|authorization|auth[_-]?token|access[_-]?token|refresh[_-]?token|secret/i;
@@ -236,7 +238,11 @@ export async function httpRequest<T>(
 
   console.debug(
     `[httpBridge] ${method} ${path}`,
-    body !== undefined ? JSON.stringify(redactForLog(body)).slice(0, 500) : '(no body)'
+    options?.redactBody
+      ? '[REDACTED]'
+      : body !== undefined
+        ? JSON.stringify(redactForLog(body)).slice(0, 500)
+        : '(no body)'
   );
 
   let response = await sendHttpRequest(method, path, headers, body);
@@ -264,9 +270,15 @@ export async function httpRequest<T>(
       errorBody = rawText;
     }
     if (options?.silentStatuses?.includes(response.status)) {
-      console.debug(`[httpBridge] ${method} ${path} → ${response.status} (silenced)`, errorBody);
+      console.debug(
+        `[httpBridge] ${method} ${path} → ${response.status} (silenced)`,
+        options?.redactBody ? '[REDACTED]' : errorBody
+      );
     } else {
-      console.error(`[httpBridge] ${method} ${path} → ${response.status}`, errorBody);
+      console.error(
+        `[httpBridge] ${method} ${path} → ${response.status}`,
+        options?.redactBody ? '[REDACTED]' : errorBody
+      );
     }
     throw new BackendHttpError({ method, path, status: response.status, body: errorBody });
   }

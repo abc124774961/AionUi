@@ -1426,7 +1426,7 @@
     "connected": "TokenBits conectado",
     "managed": "Gerenciado pelo TokenBits",
     "later": "Mais tarde",
-    "waiting": "Confira a conta, o dispositivo e o código no navegador, confirme a autorização e volte aqui. O status da autorização é verificado automaticamente.",
+    "waiting": "Conectando pelo navegador. Se você já entrou no TokenBits, a conexão será concluída automaticamente.",
     "authorize": "Autorizar no navegador",
     "reconnect": "Sua autorização do TokenBits expirou ou foi revogada. Conecte novamente para continuar usando este provedor.",
     "balance": "Saldo",

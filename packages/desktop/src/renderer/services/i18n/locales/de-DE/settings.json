@@ -1423,7 +1423,7 @@
     "connected": "TokenBits verbunden",
     "managed": "Von TokenBits verwaltet",
     "later": "Später",
-    "waiting": "Prüfen Sie Konto, Gerät und Code im Browser, bestätigen Sie die Autorisierung und kehren Sie hierher zurück. Der Autorisierungsstatus wird automatisch geprüft.",
+    "waiting": "Verbindung über den Browser wird hergestellt. Wenn Sie bei TokenBits angemeldet sind, wird die Verbindung automatisch abgeschlossen.",
     "authorize": "Im Browser autorisieren",
     "reconnect": "Ihre TokenBits-Autorisierung ist abgelaufen oder wurde widerrufen. Stellen Sie die Verbindung erneut her, um diesen Anbieter weiter zu nutzen.",
     "balance": "Guthaben",

@@ -51,6 +51,14 @@ describe('AionUi optional connection entry', () => {
     fireEvent.click(screen.getByRole('button', { name: 'settings.tokenBits.connect' }));
     expect(screen.getByTestId('tokenbits-panel')).toBeInTheDocument();
   });
+  it('allows only one panel when multiple entry points are activated', () => {
+    render(<TokenBitsConnection placement='sidebar' />);
+    render(<TokenBitsConnection placement='settings' />);
+    const entries = screen.getAllByRole('button', { name: 'settings.tokenBits.connect' });
+    fireEvent.click(entries[0]);
+    fireEvent.click(entries[1]);
+    expect(screen.getAllByTestId('tokenbits-panel')).toHaveLength(1);
+  });
   it('keeps model configuration open after authorization succeeds from the welcome page', () => {
     const { rerender } = render(<TokenBitsConnection placement='welcome' />);
     fireEvent.click(screen.getByRole('button', { name: 'settings.tokenBits.connect' }));
