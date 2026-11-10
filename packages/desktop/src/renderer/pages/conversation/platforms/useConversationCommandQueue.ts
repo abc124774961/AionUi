@@ -1,3 +1,4 @@
+import { isElectronDesktop } from '@/renderer/utils/platform';
 import { ipcBridge } from '@/common';
 import type { SessionRef } from '@/common/adapter/ipcBridge';
 import { type ChatFileRef, chatFileRefKey, isChatFileRef } from '@/common/types/chatFile';
@@ -21,6 +22,7 @@ export type ConversationCommandQueueItem = {
    *  through the queue and loses its references is a silent failure — the agent
    *  simply never sees the session block. Ids only, so this adds a handful of
    *  bytes to the persisted state. */
+
   sessions?: SessionRef[];
   created_at: number;
 };
@@ -84,6 +86,7 @@ const logCommandQueue = (conversation_id: string, event: string, payload: Record
     event,
     ...payload,
   });
+  if (!isElectronDesktop()) return;
   void ipcBridge.application?.writeRendererLog
     ?.invoke({
       level: 'info',

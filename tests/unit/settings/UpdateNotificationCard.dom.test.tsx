@@ -90,6 +90,7 @@ import UpdateNotificationCard from '@/renderer/components/settings/UpdateNotific
 
 describe('UpdateNotificationCard', () => {
   beforeEach(() => {
+    vi.stubGlobal('electronAPI', {});
     vi.stubGlobal('__APP_VERSION__', '2.1.15');
     mocks.manualProgressHandler = null;
     mocks.autoStatusHandler = null;
@@ -137,6 +138,20 @@ describe('UpdateNotificationCard', () => {
     cleanup();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it('does not restore desktop update downloads in a browser', async () => {
+    delete window.electronAPI;
+    render(<UpdateNotificationCard />);
+    await act(async () => {});
+    expect(mocks.autoUpdateRestoreDownloadedMock).not.toHaveBeenCalled();
+  });
+
+  it('does not consume desktop installer failure markers in a browser', async () => {
+    delete window.electronAPI;
+    render(<UpdateNotificationCard />);
+    await act(async () => {});
+    expect(mocks.consumeInstallerLastFailureMock).not.toHaveBeenCalled();
   });
 
   it('renders a bottom-right notification card for auto-update availability without a dialog', async () => {

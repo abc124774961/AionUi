@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isElectronDesktop } from '@/renderer/utils/platform';
+
 import { ipcBridge } from '@/common';
 import type { TConversationRuntimeSummary } from '@/common/config/storage';
 import {
@@ -56,6 +58,7 @@ type UseConversationRuntimeViewReturn = {
 const normalizeReason = (reason: string): string => reason.trim().slice(0, 200) || 'unknown';
 
 const logConversationRuntimeView = (entry: ConversationRuntimeViewLogEntry): void => {
+  if (!isElectronDesktop()) return;
   const rendererLogger = ipcBridge.application?.writeRendererLog;
   if (!rendererLogger) {
     return;
@@ -238,6 +241,7 @@ export const logStreamTerminalObserved = (
   platform: 'acp' | 'aionrs',
   stream_type: string
 ): void => {
+  if (!isElectronDesktop()) return;
   const rendererLogger = ipcBridge.application?.writeRendererLog;
   if (!rendererLogger) {
     return;

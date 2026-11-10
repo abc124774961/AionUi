@@ -5,6 +5,7 @@
  */
 
 import { ipcBridge } from '@/common';
+import { isElectronDesktop } from '@/renderer/utils/platform';
 import { useCallback, useEffect, useState } from 'react';
 
 // Keep in sync with the main-process default (process/utils/zoom.ts); a mismatch
@@ -32,6 +33,7 @@ const useFontScale = (): [number, (scale: number) => Promise<void>] => {
 
   // 从主进程读取当前缩放，保持 UI 与 Electron 同步 / Pull zoom factor from main to keep UI state aligned
   const fetchZoomFactor = useCallback(async () => {
+    if (!isElectronDesktop()) return;
     try {
       const currentFactor = await ipcBridge.application.getZoomFactor.invoke();
       if (typeof currentFactor === 'number') {
@@ -49,6 +51,7 @@ const useFontScale = (): [number, (scale: number) => Promise<void>] => {
   // 乐观更新 slider，同时通知主进程写入 zoom / Optimistically update slider and ask main process to persist zoom
   const setFontScale = useCallback(
     async (nextScale: number) => {
+      if (!isElectronDesktop()) return;
       const clamped = clampFontScale(nextScale);
       setFontScaleState(clamped);
       try {
