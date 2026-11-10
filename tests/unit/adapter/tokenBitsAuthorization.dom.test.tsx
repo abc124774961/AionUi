@@ -5,25 +5,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenBitsApi, type Authorization } from '@/renderer/components/settings/SettingsModal/TokenBitsConnection/api';
 import { useAuthorization } from '@/renderer/components/settings/SettingsModal/TokenBitsConnection/useConnection';
 
+vi.mock('@/common', () => ({
+  ipcBridge: { shell: { openExternal: { invoke: vi.fn().mockResolvedValue(undefined) } } },
+}));
 vi.mock('@/renderer/hooks/agent/useModelProviderList', () => ({ PROVIDERS_SWR_KEY: 'providers' }));
 vi.mock('@/renderer/hooks/context/AuthContext', () => ({ useOptionalAuth: () => undefined }));
-vi.mock('@/renderer/components/settings/SettingsModal/TokenBitsConnection/api', () => ({
+vi.mock('@/renderer/components/settings/SettingsModal/TokenBitsConnection/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/renderer/components/settings/SettingsModal/TokenBitsConnection/api')>()),
   STATUS_KEY: 'tokenbits-connection',
   tokenBitsApi: { start: vi.fn(), poll: vi.fn(), cancel: vi.fn(), sync: vi.fn() },
 }));
 const authorization: Authorization = {
   flow_id: 'flow-1',
-  user_code: 'ABCD-EFGH',
-  verification_uri: 'https://api.tokenbits.net/aionui/authorize',
-  verification_uri_complete: 'https://api.tokenbits.net/aionui/authorize?user_code=ABCD-EFGH',
+  authorization_url: 'https://api.tokenbits.net/aionui/connect',
+  mode: 'desktop',
   expires_at: 1900000000,
-  interval: 5,
 };
 function wrapper({ children }: { children: React.ReactNode }) {
   return <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>{children}</SWRConfig>;
 }
 describe('optional TokenBits authorization', () => {
   beforeEach(() => {
+    window.__backendPort = 13400;
     vi.useFakeTimers();
     vi.setSystemTime(1800000000000);
     vi.mocked(tokenBitsApi.start).mockResolvedValue(authorization);
@@ -32,11 +35,12 @@ describe('optional TokenBits authorization', () => {
   });
   afterEach(() => {
     cleanup();
+    delete window.__backendPort;
     vi.useRealTimers();
     vi.resetAllMocks();
   });
   it('coalesces repeated clicks and never creates model connections during authorization', async () => {
-    const { result } = renderHook(useAuthorization, { wrapper });
+    const { result } = renderHook(() => useAuthorization('https://api.tokenbits.net'), { wrapper });
     await act(async () => {
       await Promise.all([result.current.start(), result.current.start()]);
     });
@@ -45,7 +49,7 @@ describe('optional TokenBits authorization', () => {
     expect(result.current.flow?.flow_id).toBe('flow-1');
   });
   it('stops polling and cancels a pending flow when the panel closes', async () => {
-    const { result, unmount } = renderHook(useAuthorization, { wrapper });
+    const { result, unmount } = renderHook(() => useAuthorization('https://api.tokenbits.net'), { wrapper });
     await act(async () => {
       await result.current.start();
     });
@@ -64,7 +68,7 @@ describe('optional TokenBits authorization', () => {
           release = resolve;
         })
     );
-    const { result, unmount } = renderHook(useAuthorization, { wrapper });
+    const { result, unmount } = renderHook(() => useAuthorization('https://api.tokenbits.net'), { wrapper });
     let pending!: Promise<void>;
     act(() => {
       pending = result.current.start();
@@ -77,9 +81,9 @@ describe('optional TokenBits authorization', () => {
     expect(tokenBitsApi.cancel).toHaveBeenCalledWith('flow-1');
     expect(tokenBitsApi.poll).not.toHaveBeenCalled();
   });
-  it('honors slow-down without an overlapping or immediate poll', async () => {
-    vi.mocked(tokenBitsApi.poll).mockResolvedValue({ status: 'slow_down', interval: 15 });
-    const { result } = renderHook(useAuthorization, { wrapper });
+  it('honors the server interval without an overlapping poll', async () => {
+    vi.mocked(tokenBitsApi.poll).mockResolvedValue({ status: 'pending', interval: 15 });
+    const { result } = renderHook(() => useAuthorization('https://api.tokenbits.net'), { wrapper });
     await act(async () => {
       await result.current.start();
       await vi.advanceTimersByTimeAsync(5000);
@@ -93,22 +97,22 @@ describe('optional TokenBits authorization', () => {
     });
     expect(tokenBitsApi.poll).toHaveBeenCalledTimes(2);
   });
-  it('shows a recoverable failure when authorization is denied', async () => {
-    vi.mocked(tokenBitsApi.poll).mockResolvedValue({ status: 'denied', interval: 5 });
-    const { result } = renderHook(useAuthorization, { wrapper });
+  it('shows a recoverable failure when the browser authorization expires', async () => {
+    vi.mocked(tokenBitsApi.poll).mockResolvedValue({ status: 'expired', interval: 5 });
+    const { result } = renderHook(() => useAuthorization('https://api.tokenbits.net'), { wrapper });
     await act(async () => {
       await result.current.start();
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
     });
-    expect(result.current.failure).toBe('denied');
+    expect(result.current.failure).toBe('expired');
     expect(result.current.flow).toBeNull();
     expect(tokenBitsApi.sync).not.toHaveBeenCalled();
   });
   it('does not poll an expired flow', async () => {
-    vi.mocked(tokenBitsApi.start).mockResolvedValue({ ...authorization, expires_at: 1799999999 });
-    const { result } = renderHook(useAuthorization, { wrapper });
+    vi.mocked(tokenBitsApi.start).mockResolvedValue({ ...authorization, expires_at: 1800000001 });
+    const { result } = renderHook(() => useAuthorization('https://api.tokenbits.net'), { wrapper });
     await act(async () => {
       await result.current.start();
     });

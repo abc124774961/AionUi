@@ -1,5 +1,5 @@
 /** TokenBits integration added by TokenBits, using AionUi's existing UI components. */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Popconfirm, Select, Space, Spin, Typography } from '@arco-design/web-react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
@@ -13,7 +13,8 @@ const Panel: React.FC = () => {
   const { t } = useTranslation();
   const coreUser = useOptionalAuth()?.user?.id ?? 'desktop';
   const { data: status, error: statusError, mutate: reloadStatus } = useConnection();
-  const auth = useAuthorization();
+  const auth = useAuthorization(status?.browser_origin ?? status?.issuer ?? '');
+  const attempted = useRef(false);
   const ready = status?.connected && !status.needs_reauthorization && !!status.device_id;
   const {
     data: catalog,
@@ -34,6 +35,11 @@ const Panel: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<'network' | 'revocation' | null>(null);
   const refresh = useTokenBitsRefresh();
+  useEffect(() => {
+    if (!status || statusError || attempted.current) return;
+    attempted.current = true;
+    if (!ready) void auth.start();
+  }, [status, statusError, ready, auth.start]);
   const currentGroup = catalog?.groups.find((item) => item.id === group);
   useEffect(() => {
     setGroup('');
@@ -98,11 +104,9 @@ const Panel: React.FC = () => {
           content={
             failed === 'revocation'
               ? t('settings.tokenBits.revocationUnconfirmed')
-              : auth.failure === 'denied'
-                ? t('settings.tokenBits.denied')
-                : auth.failure === 'expired'
-                  ? t('settings.tokenBits.expired')
-                  : t('settings.tokenBits.failed')
+              : auth.failure === 'expired'
+                ? t('settings.tokenBits.expired')
+                : t('settings.tokenBits.failed')
           }
         />
       )}
@@ -111,22 +115,13 @@ const Panel: React.FC = () => {
       )}
       {status?.needs_reauthorization && <Alert type='warning' content={t('settings.tokenBits.reconnect')} />}
       {!ready ? (
-        auth.flow ? (
+        auth.flow || auth.busy ? (
           <>
             <Alert type='info' content={t('settings.tokenBits.waiting')} />
-            <Typography.Text copyable>{auth.flow.user_code}</Typography.Text>
-            <Space wrap>
-              <Button type='primary' onClick={() => open(auth.flow!.verification_uri_complete)}>
-                {t('settings.tokenBits.authorize')}
-              </Button>
-              <Button onClick={auth.cancel}>{t('common.cancel')}</Button>
-            </Space>
-            <Typography.Paragraph copyable className='text-12px break-all'>
-              {trustedUrl(auth.flow.verification_uri_complete, status?.issuer ?? '') ?? ''}
-            </Typography.Paragraph>
+            <Button onClick={auth.cancel}>{t('common.cancel')}</Button>
           </>
         ) : (
-          <Button type='primary' loading={auth.busy} onClick={() => void auth.start()}>
+          <Button type='primary' onClick={() => void auth.start()}>
             {t('settings.tokenBits.connect')}
           </Button>
         )

@@ -19,7 +19,7 @@ vi.mock('@/renderer/hooks/context/AuthContext', () => ({
 }));
 vi.mock('@/renderer/components/settings/SettingsModal/TokenBitsConnection/api', () => ({
   STATUS_KEY: 'tokenbits-connection',
-  trustedUrl: () => null,
+  trustedUrl: (url: string) => url,
   tokenBitsApi: {
     status: vi.fn(),
     account: vi.fn(),
@@ -171,6 +171,25 @@ afterEach(() => {
 });
 
 describe('TokenBits Panel account and device boundaries', () => {
+  it('automatically starts once only after the connection panel opens and exposes no device code or approval button', async () => {
+    window.__backendPort = 13400;
+    vi.mocked(tokenBitsApi.status).mockResolvedValue({ ...connectedStatus(23), connected: false, device_id: null });
+    vi.mocked(tokenBitsApi.start).mockResolvedValue({
+      flow_id: 'browser-flow',
+      mode: 'desktop',
+      expires_at: Math.floor(Date.now() / 1000) + 600,
+      authorization_url: 'https://api.tokenbits.net/aionui/connect',
+    });
+    renderPanel();
+    expect(await screen.findByText('settings.tokenBits.waiting')).toBeInTheDocument();
+    expect(tokenBitsApi.start).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'settings.tokenBits.authorize' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    expect(await screen.findByRole('button', { name: 'settings.tokenBits.connect' })).toBeInTheDocument();
+    expect(tokenBitsApi.start).toHaveBeenCalledTimes(1);
+    expect(tokenBitsApi.sync).not.toHaveBeenCalled();
+    delete window.__backendPort;
+  });
   it('uses the /account identity before status knows the account, and never converts a failed balance refresh into zero', async () => {
     const account = deferred<Account>();
     vi.mocked(tokenBitsApi.status).mockResolvedValue(connectedStatus(23));
@@ -221,6 +240,7 @@ describe('TokenBits Panel account and device boundaries', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm device disconnect' }));
     expect(await screen.findByRole('button', { name: 'settings.tokenBits.connect' })).toBeInTheDocument();
     expect(tokenBitsApi.disconnect).toHaveBeenCalledTimes(1);
+    expect(tokenBitsApi.start).not.toHaveBeenCalled();
     expect(screen.queryByText('Account A')).not.toBeInTheDocument();
 
     // Simulate the next authorization completing; all Panel and SWR hooks remain real.
@@ -246,6 +266,7 @@ describe('TokenBits Panel account and device boundaries', () => {
     );
     expect(screen.queryByText(/device-a-/)).not.toBeInTheDocument();
     expect(screen.queryByText('Account A')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('settings.tokenBits.models'), { target: { value: 'device-b-recommended' } });
     fireEvent.click(screen.getByRole('button', { name: 'settings.tokenBits.sync' }));
     await waitFor(() => expect(tokenBitsApi.sync).toHaveBeenCalledWith('standard', ['device-b-recommended']));
   });

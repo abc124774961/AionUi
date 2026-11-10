@@ -5,6 +5,7 @@ export type ConnectionStatus = {
   connected: boolean;
   needs_reauthorization: boolean;
   issuer: string;
+  browser_origin?: string;
   device_id: number | null;
   account: { id: number; display_name: string } | null;
   last_sync_at: number | null;
@@ -12,11 +13,9 @@ export type ConnectionStatus = {
 };
 export type Authorization = {
   flow_id: string;
-  user_code: string;
-  verification_uri: string;
-  verification_uri_complete: string;
+  authorization_url: string;
   expires_at: number;
-  interval: number;
+  mode: 'desktop' | 'web';
 };
 export type Catalog = {
   group: string;
@@ -51,17 +50,24 @@ function request<T>(method: string, path: string, body?: unknown, options?: Http
 export const tokenBitsApi = {
   status: () => request<ConnectionStatus>('GET', `${prefix}/status`, undefined, { silentStatuses: [404] }),
   start: () =>
-    request<Authorization>('POST', `${prefix}/device-authorizations`, {
+    request<Authorization>('POST', `${prefix}/browser-authorizations`, {
       client_id: window.__backendPort ? 'aionui-desktop' : 'aionui-web',
       device_name: window.__backendPort ? 'AionUi Desktop' : 'AionUi Web',
+      ...(!window.__backendPort ? { redirect_uri: `${window.location.origin}/tokenbits/callback` } : {}),
     }),
   poll: (id: string) =>
-    request<{ status: 'pending' | 'authorized' | 'slow_down' | 'expired' | 'denied'; interval: number }>(
-      'POST',
-      `${prefix}/device-authorizations/${encodeURIComponent(id)}/poll`,
-      {}
+    request<{ status: 'pending' | 'authorized' | 'expired'; interval: number }>(
+      'GET',
+      `${prefix}/browser-authorizations/${encodeURIComponent(id)}`
     ),
-  cancel: (id: string) => request<void>('DELETE', `${prefix}/device-authorizations/${encodeURIComponent(id)}`),
+  complete: (flow_id: string, code: string, state: string) =>
+    request<{ status: 'authorized' }>(
+      'POST',
+      `${prefix}/browser-authorizations/complete`,
+      { flow_id, code, state },
+      { redactBody: true }
+    ),
+  cancel: (id: string) => request<void>('DELETE', `${prefix}/browser-authorizations/${encodeURIComponent(id)}`),
   catalog: () => request<Catalog>('GET', `${prefix}/catalog`),
   account: () => request<Account>('GET', `${prefix}/account`),
   sync: (group: string, models: string[]) => request<{ synced: number }>('POST', `${prefix}/sync`, { group, models }),
@@ -73,7 +79,15 @@ export function trustedUrl(value: string, issuer: string): string | null {
   try {
     const base = new URL(issuer);
     const target = new URL(value, base);
-    return base.protocol === 'https:' && target.origin === base.origin && !target.username && !target.password
+    const trustedProtocol =
+      base.protocol === 'https:' ||
+      (base.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(base.hostname));
+    return trustedProtocol &&
+      !base.username &&
+      !base.password &&
+      target.origin === base.origin &&
+      !target.username &&
+      !target.password
       ? target.href
       : null;
   } catch {

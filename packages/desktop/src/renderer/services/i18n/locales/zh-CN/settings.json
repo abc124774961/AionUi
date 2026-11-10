@@ -1424,7 +1424,7 @@
     "connected": "TokenBits 已连接",
     "managed": "由 TokenBits 管理",
     "later": "稍后再说",
-    "waiting": "请在浏览器中核对账户、设备和验证码并确认授权，然后返回此处。系统会自动检查授权状态。",
+    "waiting": "正在通过浏览器连接。已登录 TokenBits 时将自动完成连接，无需再次确认。",
     "authorize": "前往浏览器授权",
     "reconnect": "TokenBits 授权已过期或被撤销，请重新连接后继续使用此供应商。",
     "balance": "余额",
