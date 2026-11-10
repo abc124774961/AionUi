@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isElectronDesktop } from '@/renderer/utils/platform';
+
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { addImportantToAll } from '@renderer/utils/theme/customCssProcessor';
@@ -373,6 +375,7 @@ const ShadowView = ({ children }: { children: React.ReactNode }) => {
   const isMobile = layout?.isMobile ?? false;
 
   React.useEffect(() => {
+    if (!isElectronDesktop()) return;
     let mounted = true;
     const applyCss = (t: { css?: string } | null) => {
       if (!mounted) return;

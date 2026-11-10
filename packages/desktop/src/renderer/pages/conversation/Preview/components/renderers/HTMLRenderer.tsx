@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isElectronDesktop } from '@/renderer/utils/platform';
+
 import { ipcBridge } from '@/common';
 import { useTypingAnimation } from '@/renderer/hooks/chat/useTypingAnimation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -42,6 +44,7 @@ type HtmlPreviewSourceKind = 'file' | 'data';
 type HtmlPreviewLogLevel = 'info' | 'warn' | 'error';
 
 function logHtmlPreview(level: HtmlPreviewLogLevel, message: string, data?: unknown): void {
+  if (!isElectronDesktop()) return;
   const rendererLogger = ipcBridge.application?.writeRendererLog;
   if (!rendererLogger) return;
 

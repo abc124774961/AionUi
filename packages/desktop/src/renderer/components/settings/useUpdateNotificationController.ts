@@ -23,6 +23,7 @@ import { getIncludePrerelease, runUpdateCheck, type CheckUpdateOutcome } from '.
 import { setUpdateReadyState } from './updateReadyState';
 import { IS_DISCONTINUED_BUILD } from '@/renderer/utils/discontinuedBuild';
 import { OPEN_MIGRATION_DIALOG_EVENT } from './UpdateMigrationDialog';
+import { isElectronDesktop } from '@/renderer/utils/platform';
 
 type AvailableOutcome = Extract<CheckUpdateOutcome, { kind: 'available' }>;
 
@@ -167,6 +168,10 @@ export const useUpdateNotificationController = () => {
   }, []);
 
   const restoreDownloadedUpdate = useCallback(async () => {
+    if (!isElectronDesktop()) {
+      restoreDownloadedPendingRef.current = false;
+      return;
+    }
     try {
       const res = await ipcBridge.autoUpdate.restoreDownloaded.invoke();
       if (!res?.success || !res.data?.ready || !res.data.version) {
@@ -203,6 +208,7 @@ export const useUpdateNotificationController = () => {
   }, [restoreDownloadedUpdate]);
 
   useEffect(() => {
+    if (!isElectronDesktop()) return;
     let cancelled = false;
     void ipcBridge.update.consumeInstallerLastFailure
       .invoke()

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isElectronDesktop } from '@/renderer/utils/platform';
+
 import { ipcBridge } from '@/common';
 import type { TChatConversation } from '@/common/config/storage';
 import { addEventListener } from '@/renderer/utils/emitter';
@@ -374,6 +376,7 @@ const refreshConversations = () => {
 type GeneratingTransitionSource = 'stream' | 'reconcile' | 'terminal' | 'turnCompleted' | 'deleted';
 
 const logGeneratingTransition = (conversation_id: string, next: boolean, source: GeneratingTransitionSource) => {
+  if (!isElectronDesktop()) return;
   void ipcBridge.application.writeRendererLog
     .invoke({
       level: 'info',
@@ -563,6 +566,7 @@ const clearCompleted = (conversation_id: string) => {
 };
 
 const logLateStreamIgnored = (conversation_id: string, type: string) => {
+  if (!isElectronDesktop()) return;
   void ipcBridge.application.writeRendererLog
     .invoke({
       level: 'warn',
