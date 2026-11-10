@@ -23,7 +23,7 @@ TokenBits 登录用于授权模型服务，AionUi WebUI 登录用于访问工作
 4. 连接成功后查看账户和钱包余额，选择服务档位与模型，再点击配置。配置动作不会发送模型请求，也不会替换当前会话使用的模型。
 5. 在 AionUi 原有模型选择器中选择新增的 TokenBits 托管模型，再主动发送对话。其他已配置提供商仍可使用。
 
-授权请求的范围为读取账户、读取目录、管理模型连接和撤销本设备。设备访问凭证、刷新凭证与模型密钥由 AionUi Core 处理，浏览器中的连接 UI 不接收这些凭证。界面仅打开 Core 返回的可信 HTTPS 发行方同源地址。Web 回调绑定 HttpOnly Cookie、一次性回执、state 与 PKCE；远程 HTTPS Web 部署需由 TokenBits 运营方配置精确回调 origin 白名单，不能直接信任任意自托管地址。
+授权请求的范围为读取账户、读取目录、管理模型连接和撤销本设备。设备访问凭证、刷新凭证与模型密钥由 AionUi Core 处理，浏览器中的连接 UI 不接收这些凭证。授权页仅使用 Core 启动配置确认的可信浏览器来源，默认 `https://ai.tokenbits.net`；服务 API 默认仍为 `https://api.tokenbits.net`。本地测试只允许严格 loopback HTTP 来源，其他 HTTP 地址均拒绝。Web 回调绑定 HttpOnly Cookie、一次性回执、state 与 PKCE；远程 HTTPS Web 部署需由 TokenBits 运营方配置精确回调 origin 白名单，不能直接信任任意自托管地址。
 
 钱包余额并非套餐剩余额度或最终费用估算。余额加载失败显示“暂不可用”，不显示为零。配置模型不代表免费使用；价格、套餐适用范围及实际计费以 TokenBits 价格页与账单为准。
 
