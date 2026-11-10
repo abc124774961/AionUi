@@ -24,6 +24,7 @@ import { load as loadYaml } from 'js-yaml';
 import * as path from 'path';
 import semver from 'semver';
 import { autoUpdaterService } from '../services/autoUpdaterService';
+import { isTokenBitsDistribution, TOKENBITS_RELEASE_REPO } from '../services/updateFeed';
 import { consumeInstallerLastFailure } from '../services/installerLastFailure';
 
 /** Lazily loads i18n to avoid pulling in initStorage chain at module load time */
@@ -262,6 +263,7 @@ export const mapCdnManifestToRelease = (manifest: CdnLatestManifest, repo: strin
 };
 
 const resolveRepo = (requestRepo?: string): string => {
+  if (isTokenBitsDistribution()) return TOKENBITS_RELEASE_REPO;
   const envRepo = process.env.AIONUI_GITHUB_REPO?.trim();
   const repo = (requestRepo || envRepo || DEFAULT_REPO).trim();
   return repo || DEFAULT_REPO;
@@ -677,6 +679,48 @@ export function initUpdateBridge(): void {
       try {
         const repo = resolveRepo(params?.repo);
         const currentVersion = app.getVersion();
+        if (isTokenBitsDistribution()) {
+          const releases = await fetchGitHubReleases(repo);
+          const candidates = releases
+            .filter((release) => !release.draft && (params?.includePrerelease || !release.prerelease))
+            .map((release) => ({ release, version: normalizeTagToSemver(release.tag_name) }))
+            .filter((entry): entry is { release: GitHubReleaseApi; version: string } => Boolean(entry.version))
+            .sort((a, b) => semver.rcompare(a.version, b.version));
+          const candidate = candidates.find(({ release }) =>
+            (release.assets ?? []).some((asset) => isAllowedAssetName(asset.name))
+          );
+          if (!candidate) return { success: true, data: { currentVersion, updateAvailable: false } };
+          const { release, version } = candidate;
+          const assets: GitHubReleaseAsset[] = (release.assets ?? [])
+            .filter((asset) => isAllowedAssetName(asset.name))
+            .map((asset) => ({
+              name: asset.name,
+              url: asset.browser_download_url,
+              size: asset.size,
+              contentType: asset.content_type,
+            }));
+          const currentSemver = semver.valid(currentVersion) || semver.coerce(currentVersion)?.version;
+          const latest: UpdateReleaseInfo = {
+            tagName: release.tag_name,
+            version,
+            htmlUrl: release.html_url,
+            name: release.name,
+            body: release.body,
+            publishedAt: release.published_at,
+            prerelease: release.prerelease,
+            draft: false,
+            assets,
+            recommendedAsset: pickRecommendedAsset(assets),
+          };
+          return {
+            success: true,
+            data: {
+              currentVersion,
+              updateAvailable: Boolean(currentSemver && latest.recommendedAsset && semver.gt(version, currentSemver)),
+              latest,
+            },
+          };
+        }
 
         // EN: Versioning note
         // Update comparisons are pure semver: `app.getVersion()` (packaged app version) vs the CDN

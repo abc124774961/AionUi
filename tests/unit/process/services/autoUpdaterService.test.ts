@@ -101,9 +101,20 @@ describe('AutoUpdaterService', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.clearAllTimers();
     vi.useRealTimers();
     setPlatform(originalPlatform);
+  });
+
+  it('uses the fork feed for an enhanced distribution', async () => {
+    vi.stubEnv('AIONUI_DISTRIBUTION', 'tokenbits');
+    await import('@/process/services/autoUpdaterService');
+    expect(autoUpdaterMock.setFeedURL).toHaveBeenCalledWith({
+      provider: 'github',
+      owner: 'abc124774961',
+      repo: 'AionUi',
+    });
   });
 
   it('does not use the stable CDN updater when prerelease manual mode is enabled', async () => {

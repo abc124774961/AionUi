@@ -155,6 +155,7 @@ export default defineConfig(({ mode }) => {
         'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN ?? ''),
         // Discontinued-build fork flag (see discontinuedBuild.ts). Only AionUi's
         // final `-final` tag build sets IS_DISCONTINUED_BUILD=true in CI.
+        'process.env.AIONUI_DISTRIBUTION': JSON.stringify(process.env.AIONUI_DISTRIBUTION ?? ''),
         'process.env.IS_DISCONTINUED_BUILD': JSON.stringify(process.env.IS_DISCONTINUED_BUILD === 'true'),
       },
     },

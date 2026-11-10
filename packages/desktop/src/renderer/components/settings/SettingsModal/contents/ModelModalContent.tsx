@@ -1,3 +1,4 @@
+import TokenBitsConnection from '@/renderer/components/settings/SettingsModal/TokenBitsConnection';
 /**
  * @license
  * Copyright 2025 AionUi (aionui.com)
@@ -375,6 +376,7 @@ const ModelModalContent: React.FC = () => {
           : 'flex flex-col bg-2 rd-16px px-16px md:px-24px lg:px-28px py-16px md:py-18px'
       }
     >
+      <TokenBitsConnection />
       {messageContext}
       {addPlatformModalContext}
       {editModalContext}
@@ -424,6 +426,33 @@ const ModelModalContent: React.FC = () => {
             {(data || []).map((platform: IProvider) => {
               const key = platform.id;
               const isExpanded = collapseKey[platform.id] ?? false;
+              if (platform.credential_source === 'tokenbits') {
+                return (
+                  <Collapse key={key} bordered>
+                    <Collapse.Item
+                      name={key}
+                      header={
+                        <span className='flex items-center gap-8px'>
+                          {platform.name}
+                          <Tag>{t('settings.tokenBits.managed')}</Tag>
+                          <Tag>
+                            {platform.enabled === false
+                              ? t('settings.assistantFilter.disabled')
+                              : t('settings.assistantFilter.enabled')}
+                          </Tag>
+                        </span>
+                      }
+                    >
+                      <div className='flex flex-col gap-8px text-t-primary'>
+                        {(platform.models ?? []).map((model) => (
+                          <span key={model}>{model}</span>
+                        ))}
+                        <span className='text-12px text-t-secondary'>{t('settings.tokenBits.managedHelp')}</span>
+                      </div>
+                    </Collapse.Item>
+                  </Collapse>
+                );
+              }
               return (
                 <Collapse
                   activeKey={isExpanded ? ['image-generation'] : []}

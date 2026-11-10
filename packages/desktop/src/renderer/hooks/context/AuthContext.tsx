@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { PREVIEW_SCOPE_KEY_PREFIX } from '@/renderer/pages/conversation/Preview/context/previewScope';
 import { refreshSession } from '@/common/adapter/sessionRefresh';
+import { resolveCoreCsrfToken } from '@/common/adapter/httpBridge';
 // M6: CSRF removed with legacy webserver — stub functions for compatibility, re-implement in M7
 const withCsrfToken = <T extends Record<string, unknown>>(data: T): T => data;
 const hasValidCsrfToken = (): boolean => true;
@@ -282,6 +283,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         // Logout also needs CSRF token / 登出同样需要 CSRF Token
         headers: {
           'Content-Type': 'application/json',
+          'x-csrf-token': resolveCoreCsrfToken(),
         },
         credentials: 'include',
         body: JSON.stringify(withCsrfToken({})),
@@ -311,6 +313,11 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+/** Optional read for integrations that also render in standalone previews. */
+export function useOptionalAuth(): AuthContextValue | undefined {
+  return useContext(AuthContext);
+}
 
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);

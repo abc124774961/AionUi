@@ -234,6 +234,14 @@ ipcMain.on('get-backend-port', (event) => {
   event.returnValue = backendManager.port;
 });
 
+// Only the trusted app's top-level renderer receives this process-scoped secret.
+ipcMain.on('get-tokenbits-local-secret', (event) => {
+  event.returnValue =
+    mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame
+      ? backendManager.localIntegrationSecret
+      : '';
+});
+
 ipcMain.on('get-initial-language', (event) => {
   event.returnValue = rendererInitialLanguage;
 });
