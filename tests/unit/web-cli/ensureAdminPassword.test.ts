@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   ensureAdminPassword,
   type EnsureAdminPasswordDeps,
@@ -52,6 +52,46 @@ function makeDeps(opts: { handlers: Array<(url: string, init?: RequestInit) => R
 }
 
 describe('ensureAdminPassword', () => {
+  it('bootstraps a fresh Web instance through the supplied local CLI without calling the local-only HTTP reset', async () => {
+    const { deps, calls, logs, warns } = makeDeps({
+      handlers: [() => mockResponse(200, { needs_setup: true }), () => mockResponse(403, { error: 'local-only' })],
+    });
+    deps.initializePassword = vi.fn().mockResolvedValue('FreshWebPassword');
+
+    await ensureAdminPassword({ backendPort: 25808 }, deps);
+
+    expect(deps.initializePassword).toHaveBeenCalledOnce();
+    expect(calls.every(({ url }) => !url.endsWith('/reset-password'))).toBe(true);
+    expect(logs).toContain('[aionui-web] Generated initial admin password: FreshWebPassword');
+    expect(warns).toEqual([]);
+  });
+
+  it('preserves an existing Web password by never invoking the bootstrap callback', async () => {
+    const { deps, calls } = makeDeps({
+      handlers: [
+        () => mockResponse(200, { needs_setup: false }),
+        () => mockResponse(200, { data: { username: 'admin' } }),
+      ],
+    });
+    deps.initializePassword = vi.fn();
+
+    await ensureAdminPassword({ backendPort: 25808 }, deps);
+
+    expect(deps.initializePassword).not.toHaveBeenCalled();
+    expect(calls.every(({ init }) => !init?.method || init.method === 'GET')).toBe(true);
+  });
+
+  it('does not claim a generated password or fall back to HTTP reset when CLI initialization fails', async () => {
+    const { deps, calls, logs, warns } = makeDeps({ handlers: [() => mockResponse(200, { needs_setup: true })] });
+    deps.initializePassword = vi.fn().mockRejectedValue(new Error('Core initialization failed'));
+
+    await ensureAdminPassword({ backendPort: 25808 }, deps);
+
+    expect(logs).toEqual([]);
+    expect(calls).toHaveLength(1);
+    expect(warns).toContain('[aionui-web] failed to seed initial admin password: Core initialization failed');
+  });
+
   it('seeds password on fresh install (needs_setup=true)', async () => {
     const { deps, calls, logs, warns } = makeDeps({
       handlers: [

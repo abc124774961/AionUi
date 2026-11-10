@@ -238,3 +238,7 @@ graphify-out/
 .analysis/
 temp/
 .playwright-mcp/
+
+# Local integration verification and standalone Web build artifacts
+/output/
+/dist-web-cli/
