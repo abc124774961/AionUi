@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Sentry must be initialized first
+// Bind a hosted document before adapters or other imports can issue requests.
+import './utils/ui/hostedWorkspace';
+
+// Sentry must be initialized before the rest of the application
 // Use electron-specific renderer package only inside Electron; fall back to the
 // browser SDK when running as a web server (no window.electronAPI).
 if ((window as { electronAPI?: unknown }).electronAPI) {

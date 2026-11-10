@@ -8,6 +8,7 @@ import { Message } from '@arco-design/web-react';
 import MonacoEditor from '@monaco-editor/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getHostedWorkspace, HOSTED_PREVIEW_SANDBOX } from '@/renderer/utils/ui/hostedWorkspace';
 
 interface HTMLPreviewProps {
   content: string;
@@ -62,6 +63,14 @@ const HTMLPreview: React.FC<HTMLPreviewProps> = ({ content, file_path, hideToolb
     if (!iframeRef.current) return;
 
     const iframe = iframeRef.current;
+    if (getHostedWorkspace()) {
+      // Build the optional inspector in an inert document. An opaque sandbox
+      // cannot be populated through contentDocument or document.write.
+      const content = new DOMParser().parseFromString(htmlCode, 'text/html');
+      if (inspectorMode) injectInspectorScript(content);
+      iframe.srcdoc = `<!doctype html>${content.documentElement.outerHTML}`;
+      return;
+    }
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
 
     if (!iframeDoc) return;
@@ -231,6 +240,8 @@ const HTMLPreview: React.FC<HTMLPreviewProps> = ({ content, file_path, hideToolb
    */
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (getHostedWorkspace() && event.source !== iframeRef.current?.contentWindow) return;
+      if (!event.data || typeof event.data !== 'object') return;
       if (event.data.type === 'element-selected') {
         const elementInfo: SelectedElement = event.data.data;
         setSelectedElement(elementInfo);
@@ -403,7 +414,7 @@ const HTMLPreview: React.FC<HTMLPreviewProps> = ({ content, file_path, hideToolb
           <iframe
             ref={iframeRef}
             className='w-full h-full border-0'
-            sandbox='allow-scripts allow-same-origin'
+            sandbox={getHostedWorkspace() ? HOSTED_PREVIEW_SANDBOX : 'allow-scripts allow-same-origin'}
             title='HTML Preview'
           />
         </div>

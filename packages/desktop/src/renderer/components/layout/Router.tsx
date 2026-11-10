@@ -5,7 +5,10 @@ import DocumentTitle from '@renderer/components/layout/DocumentTitle';
 import { useCrossSessionRateLimitNotice } from '@/renderer/hooks/system/useCrossSessionRateLimitNotice';
 import { useAuth } from '@renderer/hooks/context/AuthContext';
 import { TEAM_MODE_ENABLED } from '@/common/config/constants';
-import { TokenBitsCallback } from '@/renderer/components/settings/SettingsModal/TokenBitsConnection';
+import {
+  TokenBitsCallback,
+  TokenBitsHostedSetup,
+} from '@/renderer/components/settings/SettingsModal/TokenBitsConnection';
 const Conversation = React.lazy(() => import('@renderer/pages/conversation'));
 const Guid = React.lazy(() => import('@renderer/pages/guid'));
 const AgentSettings = React.lazy(() => import('@renderer/pages/settings/AgentSettings'));
@@ -67,6 +70,7 @@ const PanelRoute: React.FC<{ layout: React.ReactElement }> = ({ layout }) => {
   return (
     <HashRouter>
       <TokenBitsCallback />
+      <TokenBitsHostedSetup />
       <DocumentTitle />
       <Routes>
         <Route

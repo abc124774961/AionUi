@@ -7,6 +7,7 @@ import Panel from './Panel';
 import { useConnection } from './useConnection';
 import { getConnectionPanel, showConnectionPanel, subscribeConnectionPanel } from './browserFlow';
 export { default as TokenBitsCallback } from './Callback';
+export { default as TokenBitsHostedSetup } from './HostedSetup';
 
 const DISMISS_KEY = 'aionui.tokenbits.welcome.dismissed';
 const TokenBitsConnection: React.FC<{ placement?: 'welcome' | 'settings' | 'sidebar'; collapsed?: boolean }> = ({

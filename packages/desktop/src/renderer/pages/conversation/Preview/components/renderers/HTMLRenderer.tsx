@@ -9,6 +9,7 @@ import { useTypingAnimation } from '@/renderer/hooks/chat/useTypingAnimation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScrollSyncTarget } from '../../hooks/useScrollSyncHelpers';
 import { generateInspectScript } from './htmlInspectScript';
+import { getHostedWorkspace, HOSTED_PREVIEW_SANDBOX } from '@/renderer/utils/ui/hostedWorkspace';
 
 /** 选中元素的数据结构 / Selected element data structure */
 export interface InspectedElement {
@@ -755,7 +756,11 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
             width: '100%',
             height: '100%',
           }}
-          sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-modals'
+          sandbox={
+            getHostedWorkspace()
+              ? HOSTED_PREVIEW_SANDBOX
+              : 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals'
+          }
         />
       )}
     </div>

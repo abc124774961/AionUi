@@ -6,6 +6,7 @@
 
 import { getBaseUrl } from '@/common/adapter/httpBridge';
 import type { ChatFileRef } from '@/common/types/chatFile';
+import { withHostedWorkspaceUrl } from '@/renderer/utils/ui/hostedWorkspace';
 
 /** Build the raw-byte stream URL for a renderer-safe file reference. */
 export const buildFileStreamUrl = (ref: ChatFileRef): string => {
@@ -16,5 +17,5 @@ export const buildFileStreamUrl = (ref: ChatFileRef): string => {
   } else {
     params.set('path', ref.path);
   }
-  return `${getBaseUrl()}/api/fs/stream?${params.toString()}`;
+  return withHostedWorkspaceUrl(`${getBaseUrl()}/api/fs/stream?${params.toString()}`);
 };

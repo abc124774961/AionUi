@@ -7,6 +7,11 @@
 import { ipcBridge } from '@/common';
 import type { ChatFileRef } from '@/common/types/chatFile';
 import { getBaseUrl, isBackendHttpError } from '@/common/adapter/httpBridge';
+import {
+  getHostedWorkspace,
+  HOSTED_PREVIEW_SANDBOX,
+  withHostedWorkspaceUrl,
+} from '@/renderer/utils/ui/hostedWorkspace';
 import WebviewHost from '@/renderer/components/media/WebviewHost';
 import { openExternalUrl } from '@/renderer/utils/platform';
 import { isElectronDesktop } from '@/renderer/utils/platform';
@@ -103,15 +108,15 @@ export function resolveOfficeWatchUrl(url: string, docType: DocType): string {
         // trailing slash matches neither route and 404s (#3212), so emit a
         // suffix only when it carries a real sub-path.
         const subPath = suffix && suffix !== '/' ? suffix : '';
-        return `${PROXY_PATH[docType]}/${port}${subPath}`;
+        return withHostedWorkspaceUrl(`${PROXY_PATH[docType]}/${port}${subPath}`);
       }
     }
-    return `${getBaseUrl()}${url}`;
+    return withHostedWorkspaceUrl(`${getBaseUrl()}${url}`);
   }
 
   if (!isElectronDesktop()) {
     const parsed = new URL(url);
-    return `${PROXY_PATH[docType]}/${parsed.port}`;
+    return withHostedWorkspaceUrl(`${PROXY_PATH[docType]}/${parsed.port}`);
   }
 
   return url;
@@ -308,7 +313,14 @@ const OfficeWatchViewer: React.FC<OfficeWatchViewerProps> = ({ docType, fileRef,
   if (isElectronDesktop()) {
     return <WebviewHost url={watchUrl} className='bg-bg-1' />;
   }
-  return <iframe src={watchUrl} className='w-full h-full border-0 bg-bg-1' title={IFRAME_TITLE[docType]} />;
+  return (
+    <iframe
+      src={watchUrl}
+      sandbox={getHostedWorkspace() ? HOSTED_PREVIEW_SANDBOX : undefined}
+      className='w-full h-full border-0 bg-bg-1'
+      title={IFRAME_TITLE[docType]}
+    />
+  );
 };
 
 export default OfficeWatchViewer;

@@ -10,6 +10,7 @@
  */
 
 import { getBaseUrl } from '@/common/adapter/httpBridge';
+import { withHostedWorkspaceUrl } from './ui/hostedWorkspace';
 
 /**
  * Check if running in Electron desktop environment
@@ -54,9 +55,9 @@ function isAbsoluteAssetUrl(url: string): boolean {
  */
 export const resolveBackendAssetUrl = (url: string | undefined): string | undefined => {
   if (!url) return url;
-  if (isAbsoluteAssetUrl(url) || /^data:/i.test(url)) return url;
+  if (isAbsoluteAssetUrl(url) || /^data:/i.test(url)) return withHostedWorkspaceUrl(url);
   if (url.startsWith('/')) {
-    return isElectronDesktop() ? `${getBaseUrl()}${url}` : url;
+    return isElectronDesktop() ? `${getBaseUrl()}${url}` : withHostedWorkspaceUrl(url);
   }
   return url;
 };
@@ -89,6 +90,6 @@ export const openExternalUrl = async (url: string): Promise<void> => {
     const { ipcBridge } = await import('@/common');
     await ipcBridge.shell.openExternal.invoke(url);
   } else {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(withHostedWorkspaceUrl(url), '_blank', 'noopener,noreferrer');
   }
 };

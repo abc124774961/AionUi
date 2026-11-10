@@ -5,6 +5,7 @@
  */
 
 import { isElectronDesktop } from '@renderer/utils/platform';
+import { getHostedWorkspace } from '@renderer/utils/ui/hostedWorkspace';
 
 const SERVICE_WORKER_URL = './sw.js';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
@@ -14,7 +15,7 @@ function isPwaRegistrationSupported(): boolean {
     return false;
   }
 
-  if (isElectronDesktop() || !('serviceWorker' in navigator)) {
+  if (isElectronDesktop() || getHostedWorkspace() || !('serviceWorker' in navigator)) {
     return false;
   }
 

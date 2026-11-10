@@ -9,6 +9,14 @@ import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 
 const writeRendererLogInvoke = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const hosted = vi.hoisted(() => ({ enabled: false }));
+vi.mock('@/renderer/utils/ui/hostedWorkspace', () => ({
+  getHostedWorkspace: () => (hosted.enabled ? {} : null),
+  HOSTED_PREVIEW_SANDBOX: 'allow-scripts allow-forms allow-downloads',
+}));
+afterEach(() => {
+  hosted.enabled = false;
+});
 
 vi.mock('@/common', () => ({
   ipcBridge: {
@@ -63,6 +71,14 @@ function createConsoleMessageEvent({
 }
 
 describe('HTMLViewer', () => {
+  it('uses an opaque srcDoc sandbox for hosted generated HTML', () => {
+    hosted.enabled = true;
+    const { container } = render(<HTMLViewer content='<h1>Hosted preview</h1><script>window.rendered=true</script>' />);
+    const iframe = container.querySelector('iframe');
+    expect(iframe?.getAttribute('sandbox')).not.toContain('allow-same-origin');
+    expect(iframe?.getAttribute('srcdoc')).toContain('<h1>Hosted preview</h1>');
+    expect(iframe?.getAttribute('srcdoc')).toContain('window.rendered=true');
+  });
   it('renders iframe with HTML content', () => {
     const { container } = render(<HTMLViewer content='<h1>Test</h1>' />);
     const iframe = container.querySelector('iframe');
@@ -86,6 +102,14 @@ describe('HTMLRenderer', () => {
   afterEach(() => {
     Reflect.deleteProperty(window, 'electronAPI');
     vi.clearAllMocks();
+  });
+  it('keeps hosted HTML scripts isolated from the workbench origin', () => {
+    Reflect.deleteProperty(window, 'electronAPI');
+    hosted.enabled = true;
+    const { container } = render(<HTMLRenderer content='<h1>Hosted preview</h1>' />);
+    const iframe = container.querySelector('iframe');
+    expect(iframe?.getAttribute('sandbox')).toBe('allow-scripts allow-forms allow-downloads');
+    expect(iframe?.getAttribute('srcdoc')).toContain('Hosted preview');
   });
 
   it('loads clean local HTML files through file URL in Electron', () => {
